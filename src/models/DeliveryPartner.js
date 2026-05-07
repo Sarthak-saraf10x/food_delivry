@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const deliveryPartnerSchema = new mongoose.Schema(
     {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: [true, "Delivery partner must be linked to a user account"],
+        },
         name: {
             type: String,
             required: [true, "Delivery partner must have a name"],

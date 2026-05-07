@@ -55,13 +55,13 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, role } = req.body;
 
-        // 1) Check if email and password exist
-        if (!email || !password) {
+        // 1) Check if email, password, and role exist
+        if (!email || !password || !role) {
             return res.status(400).json({
                 status: "fail",
-                message: "Please provide email and password!",
+                message: "Please provide email, password, and role!",
             });
         }
 
@@ -75,7 +75,15 @@ exports.login = async (req, res) => {
             });
         }
 
-        // 3) If everything is ok, send token to client
+        // 3) Check if user has the requested role
+        if (user.role !== role) {
+            return res.status(403).json({
+                status: "fail",
+                message: "Access denied: Incorrect role for this login.",
+            });
+        }
+
+        // 4) If everything is ok, send token to client
         createSendToken(user, 200, res);
     } catch (err) {
         res.status(400).json({
