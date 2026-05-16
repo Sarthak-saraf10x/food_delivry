@@ -33,6 +33,9 @@ const restaurantSchema = new mongoose.Schema(
             type: String,
         },
         cuisine: [String],
+        openingHours: {
+            type: String,
+        },
         rating: {
             type: Number,
             default: 0,

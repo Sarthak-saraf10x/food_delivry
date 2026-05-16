@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Restaurant = require("../models/Restaurant");
 
 const signToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -7,7 +8,7 @@ const signToken = (id) => {
     });
 };
 
-const createSendToken = (user, statusCode, res) => {
+const createSendToken = (user, statusCode, res, extraData = {}) => {
     const token = signToken(user._id);
 
     const cookieOptions = {
@@ -31,6 +32,7 @@ const createSendToken = (user, statusCode, res) => {
         token,
         data: {
             user,
+            ...extraData
         },
     });
 };
@@ -44,7 +46,20 @@ exports.register = async (req, res) => {
             role: req.body.role,
         });
 
-        createSendToken(newUser, 201, res);
+        let extraData = {};
+        if (req.body.role === "restaurant_owner") {
+            const newRestaurant = await Restaurant.create({
+                name: req.body.restaurantName || req.body.name + "'s Restaurant",
+                ownerId: newUser._id,
+                address: req.body.address || "Not specified",
+                image: req.body.image || "",
+                cuisine: req.body.cuisine ? req.body.cuisine.split(',').map(c => c.trim()) : [],
+                openingHours: req.body.openingHours || "",
+            });
+            extraData.restaurantId = newRestaurant._id;
+        }
+
+        createSendToken(newUser, 201, res, extraData);
     } catch (err) {
         res.status(400).json({
             status: "fail",
@@ -83,8 +98,17 @@ exports.login = async (req, res) => {
             });
         }
 
-        // 4) If everything is ok, send token to client
-        createSendToken(user, 200, res);
+        // 4) Fetch restaurant details if restaurant_owner
+        let extraData = {};
+        if (user.role === "restaurant_owner") {
+            const restaurant = await Restaurant.findOne({ ownerId: user._id });
+            if (restaurant) {
+                extraData.restaurantId = restaurant._id;
+            }
+        }
+
+        // 5) If everything is ok, send token to client
+        createSendToken(user, 200, res, extraData);
     } catch (err) {
         res.status(400).json({
             status: "fail",
