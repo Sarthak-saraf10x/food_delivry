@@ -27,9 +27,15 @@ const restaurantSchema = new mongoose.Schema(
                 default: "Point",
                 enum: ["Point"],
             },
-            coordinates: [Number], // [longitude, latitude]
+            coordinates: {
+                type: [Number],
+                default: [0, 0], // [longitude, latitude]
+            },
         },
         image: {
+            type: String,
+        },
+        logo: {
             type: String,
         },
         cuisine: [String],
@@ -43,6 +49,10 @@ const restaurantSchema = new mongoose.Schema(
             max: [5, "Rating must be below 5.0"],
         },
         isActive: {
+            type: Boolean,
+            default: true,
+        },
+        isOpen: {
             type: Boolean,
             default: true,
         },
