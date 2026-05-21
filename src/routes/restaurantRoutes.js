@@ -1,20 +1,28 @@
 const express = require("express");
 const restaurantController = require("../controllers/restaurantController");
+const { protect, restrictTo } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
-router
-    .route("/")
-    .get(restaurantController.getAllRestaurants)
-    .post(restaurantController.createRestaurant);
+// Public: anyone can view restaurants
+router.get("/", restaurantController.getAllRestaurants);
+router.get("/:id", restaurantController.getRestaurantById);
+router.get("/:restaurantId/menu", restaurantController.getRestaurantMenu);
 
-router
-    .route("/:id")
-    .get(restaurantController.getRestaurantById);
+// Protected: only restaurant owners can create/manage
+router.post(
+    "/",
+    protect,
+    restrictTo("restaurant_owner", "admin"),
+    restaurantController.createRestaurant
+);
 
-router
-    .route("/:restaurantId/menu")
-    .get(restaurantController.getRestaurantMenu)
-    .post(restaurantController.addMenuItem);
+router.post(
+    "/:restaurantId/menu",
+    protect,
+    restrictTo("restaurant_owner", "admin"),
+    restaurantController.addMenuItem
+);
 
 module.exports = router;
+
