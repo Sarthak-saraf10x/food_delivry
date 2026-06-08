@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.post("/register", authController.register);
 router.post("/login", authController.login);
+router.post("/google", authController.googleLogin);
 
 // Returns the current user – useful for validating a stored JWT on frontend boot
 router.get("/me", protect, (req, res) => {

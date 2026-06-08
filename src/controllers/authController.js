@@ -116,3 +116,67 @@ exports.login = async (req, res) => {
         });
     }
 };
+
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+exports.googleLogin = async (req, res) => {
+    try {
+        const { token, role } = req.body;
+        
+        if (!token) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Please provide google token",
+            });
+        }
+
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        const { email, name } = payload;
+
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // Create a new user if one doesn't exist
+            // Using a random secure password since they login with google
+            const crypto = require('crypto');
+            const randomPassword = crypto.randomBytes(20).toString('hex');
+            
+            user = await User.create({
+                name,
+                email,
+                password: randomPassword,
+                role: role || 'customer',
+            });
+        }
+
+        // Check if user has the requested role
+        if (role && user.role !== role) {
+            return res.status(403).json({
+                status: "fail",
+                message: "Access denied: Incorrect role for this login.",
+            });
+        }
+
+        let extraData = {};
+        if (user.role === "restaurant_owner") {
+            const restaurant = await Restaurant.findOne({ ownerId: user._id });
+            if (restaurant) {
+                extraData.restaurantId = restaurant._id;
+            }
+        }
+
+        createSendToken(user, 200, res, extraData);
+    } catch (err) {
+        console.error("Google Login Error:", err);
+        res.status(400).json({
+            status: "fail",
+            message: err.message,
+        });
+    }
+};
